@@ -1,11 +1,11 @@
 {
   "name": "controle-financeiro-home",
   "version": "1.0.0",
-  "description": "Controle Financeiro Home — Sistema financeiro pessoal/familiar SaaS-ready",
+  "description": "Controle Financeiro Home \u2014 Sistema financeiro pessoal/familiar SaaS-ready",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node startup.js",
+    "dev": "nodemon startup.js",
     "seed": "node src/seed.js"
   },
   "engines": {
