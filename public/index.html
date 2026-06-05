@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle Financeiro Home</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box}body{font-family:'Inter',system-ui,sans-serif;background:#f8fafc}
+  .sidebar{width:240px;min-height:100vh;background:#1e293b;position:fixed;left:0;top:0;z-index:40}
+  .main-content{margin-left:240px;min-height:100vh}
+  .map-table{border-collapse:separate;border-spacing:0;width:100%}
+  .map-table th{position:sticky;top:0;background:#1e293b;color:white;padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;z-index:10}
+  .map-table th:first-child{left:0;z-index:20;min-width:230px}
+  .map-table td{padding:6px 10px;font-size:12px;border-bottom:1px solid #f1f5f9;white-space:nowrap}
+  .map-table td:first-child{position:sticky;left:0;background:white;z-index:5;font-weight:500;min-width:230px;max-width:230px;overflow:hidden;text-overflow:ellipsis}
+  .map-table tr:hover td,.map-table tr:hover td:first-child{background:#f8fafc}
+  .section-header td{background:#f1f5f9!important;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#475569}
+  .section-header td:first-child{background:#f1f5f9!important}
+  .receita-row td{color:#15803d}.despesa-row td{color:#b91c1c}
+  .total-row td{font-weight:700;background:#f8fafc!important;border-top:2px solid #e2e8f0}
+  .total-row td:first-child{background:#f8fafc!important}
+  .saldo-row td{font-weight:700;background:#eff6ff!important;color:#1d4ed8}
+  .saldo-row td:first-child{background:#eff6ff!important}
+  .cell-edit{cursor:pointer;padding:2px 4px;border-radius:3px;display:inline-block;min-width:60px;text-align:right}
+  .cell-edit:hover{background:#e0f2fe}
+  .cell-input{width:90px;padding:2px 4px;border:1px solid #3b82f6;border-radius:3px;font-size:12px;text-align:right;outline:none}
+  .kpi-card{background:white;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #f1f5f9}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:#94a3b8;cursor:pointer;border-radius:8px;margin:2px 8px;font-size:14px;transition:all .15s}
+  .nav-item:hover{background:rgba(255,255,255,.1);color:white}
+  .nav-item.active{background:#3b82f6;color:white}
+  .nav-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;padding:12px 16px 4px}
+  .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+  .badge-green{background:#dcfce7;color:#15803d}.badge-red{background:#fee2e2;color:#dc2626}
+  .badge-blue{background:#dbeafe;color:#1d4ed8}.badge-yellow{background:#fef9c3;color:#a16207}
+  .badge-gray{background:#f1f5f9;color:#64748b}.badge-orange{background:#ffedd5;color:#c2410c}
+  .badge-purple{background:#f5f3ff;color:#7c3aed}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:center;justify-content:center}
+  .modal-box{background:white;border-radius:16px;padding:24px;max-width:560px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .form-label{font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;display:block}
+  .form-input{width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;transition:border .15s}
+  .form-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+  .form-select{width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;background:white}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+  .btn-primary{background:#3b82f6;color:white}.btn-primary:hover{background:#2563eb}
+  .btn-success{background:#22c55e;color:white}.btn-danger{background:#ef4444;color:white}
+  .btn-outline{background:white;color:#374151;border:1px solid #e2e8f0}.btn-outline:hover{background:#f8fafc}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .tab-btn{padding:8px 16px;font-size:14px;font-weight:500;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
+  .tab-btn.active{color:#3b82f6;border-bottom-color:#3b82f6}
+  .spinner{border:3px solid #f1f5f9;border-top:3px solid #3b82f6;border-radius:50%;width:32px;height:32px;animation:spin 0.8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:24px;right:24px;z-index:200;background:#1e293b;color:white;padding:12px 20px;border-radius:10px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:slideIn .3s ease}
+  @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  @media(max-width:768px){.sidebar{display:none}.main-content{margin-left:0}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ── Constants ────────────────────────────────────────────
+const MS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MF = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const API = window.location.origin;
+const fmt = v => (!v&&v!==0)||v===0?'—':new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}).format(v);
+const fmtFull = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+
+// ── API Client ───────────────────────────────────────────
+let _token = localStorage.getItem('cfh_token');
+const setToken = t => { _token = t; if(t) localStorage.setItem('cfh_token',t); else localStorage.removeItem('cfh_token'); };
+
+const apiFetch = async (path, opts={}) => {
+  const res = await fetch(`${API}/api${path}`, {
+    headers: { 'Content-Type':'application/json', ...(_token?{Authorization:`Bearer ${_token}`}:{}) },
+    ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (res.status === 401) { setToken(null); window.location.reload(); return; }
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||`HTTP ${res.status}`); }
+  return res.status === 204 ? null : res.json();
+};
+
+// ── Toast ────────────────────────────────────────────────
+let _toast;
+const Toast = ({ msg, onDone }) => {
+  useEffect(() => { const t = setTimeout(onDone, 3000); return ()=>clearTimeout(t); }, []);
+  return <div className="toast">{msg}</div>;
+};
+
+// ── Shared Components ────────────────────────────────────
+const Badge = ({ children, variant='gray' }) => <span className={`badge badge-${variant}`}>{children}</span>;
+const StatusBadge = ({ s }) => {
+  const m = {pago:['green','Pago'],recebido:['green','Recebido'],previsto:['blue','Previsto'],em_aberto:['yellow','Em Aberto'],atrasado:['orange','Atrasado'],cancelado:['gray','Cancelado']};
+  const [v,l] = m[s]||['gray',s||'—']; return <Badge variant={v}>{l}</Badge>;
+};
+const ScenarioBadge = ({ s }) => {
+  const m = {real:['blue','Real'],previsto:['gray','Previsto'],otimista:['green','Otimista'],conservador:['yellow','Conservador'],critico:['red','Crítico'],simulacao:['orange','Simulação']};
+  const [v,l] = m[s]||['gray',s||'']; return <Badge variant={v}>{l}</Badge>;
+};
+const Modal = ({ open, onClose, title, children, size='md' }) => {
+  if(!open) return null;
+  const w = {sm:'360px',md:'560px',lg:'720px'}[size];
+  return <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-box" style={{maxWidth:w}} onClick={e=>e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+      </div>
+      {children}
+    </div>
+  </div>;
+};
+const Spinner = () => <div className="flex justify-center items-center p-12"><div className="spinner"/></div>;
+
+// ── Chart Components ─────────────────────────────────────
+const BarChart = ({ labels, datasets, height=260 }) => {
+  const ref=useRef(); const cr=useRef();
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(cr.current) cr.current.destroy();
+    cr.current = new Chart(ref.current,{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:12},usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'R$'+(Math.abs(v)>=1000?(v/1000).toFixed(0)+'k':v)}}}}});
+    return ()=>cr.current?.destroy();
+  },[JSON.stringify({labels,datasets})]);
+  return <canvas ref={ref} style={{height}}/>;
+};
+const LineChart = ({ labels, datasets, height=220 }) => {
+  const ref=useRef(); const cr=useRef();
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(cr.current) cr.current.destroy();
+    cr.current = new Chart(ref.current,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:12},usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'R$'+(Math.abs(v)>=1000?(v/1000).toFixed(0)+'k':v)}}}}});
+    return ()=>cr.current?.destroy();
+  },[JSON.stringify({labels,datasets})]);
+  return <canvas ref={ref} style={{height}}/>;
+};
+const DoughnutChart = ({ labels, data, height=220 }) => {
+  const ref=useRef(); const cr=useRef();
+  const colors=['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(cr.current) cr.current.destroy();
+    cr.current = new Chart(ref.current,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors.slice(0,data.length),borderWidth:2,borderColor:'white'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{font:{size:11},usePointStyle:true,padding:12}}}}});
+    return ()=>cr.current?.destroy();
+  },[JSON.stringify({labels,data})]);
+  return <canvas ref={ref} style={{height}}/>;
+};
+
+// ── Financial Calculations ───────────────────────────────
+const calcTotals = (receipts, expenses, initBal=123000) => {
+  const tR = MS.map((_,m)=>receipts.reduce((s,r)=>s+(parseFloat(r.months?.[m])||0),0));
+  const tD = MS.map((_,m)=>expenses.reduce((s,e)=>s+(parseFloat(e.months?.[m])||0),0));
+  const res = tR.map((v,m)=>v-tD[m]);
+  let saldo=[]; let p=parseFloat(initBal)||0;
+  for(let m=0;m<12;m++){const s=p+res[m];saldo.push(s);p=s;}
+  return {tR,tD,res,saldo};
+};
+
+// ── LOGIN PAGE ───────────────────────────────────────────
+const LoginPage = ({ onLogin }) => {
+  const [email,setEmail]=useState('carlos@grow.com.br');
+  const [pw,setPw]=useState('admin123');
+  const [err,setErr]=useState('');
+  const [loading,setLoading]=useState(false);
+
+  const doLogin = async () => {
+    setLoading(true); setErr('');
+    try {
+      const data = await apiFetch('/auth/login',{method:'POST',body:{email,password:pw}});
+      setToken(data.token);
+      onLogin(data.user);
+    } catch(e) { setErr(e.message); }
+    setLoading(false);
+  };
+
+  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="w-full max-w-md">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-2xl mb-4 shadow-lg">
+          <span className="text-white text-2xl font-bold">CF</span>
+        </div>
+        <h1 className="text-3xl font-bold text-white">Controle Financeiro Home</h1>
+        <p className="text-slate-400 mt-2 text-sm">Controle financeiro pessoal e familiar</p>
+      </div>
+      <div className="bg-white rounded-2xl p-8 shadow-2xl">
+        <h2 className="text-xl font-bold text-gray-800 mb-6">Entrar na conta</h2>
+        {err && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm">{err}</div>}
+        <div className="space-y-4">
+          <div><label className="form-label">E-mail</label>
+            <input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doLogin()} /></div>
+          <div><label className="form-label">Senha</label>
+            <input className="form-input" type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doLogin()} /></div>
+          <button className="btn btn-primary w-full justify-center text-base py-3" onClick={doLogin} disabled={loading}>
+            {loading?'⏳ Entrando...':'🔐 Entrar'}
+          </button>
+        </div>
+        <div className="mt-5 pt-5 border-t border-gray-100">
+          <p className="text-xs text-gray-500 font-semibold mb-2">Credenciais de acesso:</p>
+          <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">👑 Admin: carlos@grow.com.br / admin123</p>
+        </div>
+      </div>
+    </div>
+  </div>;
+};
+
+// ── SIDEBAR ──────────────────────────────────────────────
+const Sidebar = ({ page, setPage, user }) => {
+  const nav = [
+    {g:'Principal'},{id:'dashboard',icon:'📊',label:'Dashboard'},{id:'map',icon:'🗺️',label:'Mapa Anual'},
+    {id:'entries',icon:'📋',label:'Lançamentos'},{id:'agenda',icon:'📅',label:'Agenda Financeira'},
+    {g:'Análise'},{id:'simulations',icon:'🔮',label:'Simulações'},{id:'reports',icon:'📈',label:'Relatórios'},
+    {g:'Cadastros'},{id:'accounts',icon:'🏦',label:'Contas Financeiras'},{id:'cards',icon:'💳',label:'Cartões'},
+    {id:'coa',icon:'📂',label:'Plano de Contas'},
+    {g:'Admin'},{id:'users',icon:'👥',label:'Usuários'},{id:'audit',icon:'🔍',label:'Auditoria'},
+    {id:'settings',icon:'⚙️',label:'Configurações'},
+  ];
+  return <div className="sidebar flex flex-col">
+    <div className="p-4 border-b border-slate-700">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">CF</div>
+        <div><div className="text-white font-bold text-sm leading-tight">Controle Financeiro</div><div className="text-slate-400 text-xs">Home v2.0</div></div>
+      </div>
+    </div>
+    <div className="flex-1 overflow-y-auto py-2">
+      {nav.map((item,i)=>item.g
+        ?<div key={i} className="nav-group-label">{item.g}</div>
+        :<div key={i} className={`nav-item ${page===item.id?'active':''}`} onClick={()=>setPage(item.id)}>
+          <span>{item.icon}</span><span>{item.label}</span>
+        </div>
+      )}
+    </div>
+    <div className="p-4 border-t border-slate-700">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
+          {user.name.split(' ').map(n=>n[0]).join('').slice(0,2)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-white text-xs font-semibold truncate">{user.name}</div>
+          <div className="text-slate-400 text-xs capitalize">{user.role}</div>
+        </div>
+      </div>
+    </div>
+  </div>;
+};
+
+// ── DASHBOARD ────────────────────────────────────────────
+const DashboardPage = ({ mapId }) => {
+  const [data, setData] = useState(null);
+  const [selMonth, setSelMonth] = useState(new Date().getMonth());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{
+    if(!mapId) return;
+    setLoading(true);
+    apiFetch(`/maps/${mapId}/summary`).then(setData).catch(console.error).finally(()=>setLoading(false));
+  },[mapId]);
+
+  if(loading) return <Spinner/>;
+  if(!data) return <div className="p-6 text-gray-500">Selecione um mapa financeiro.</div>;
+
+  const {tR,tD,res,saldo} = calcTotals(data.receipts, data.expenses, data.map?.initial_balance);
+  const catMap={};
+  data.expenses.forEach(e=>{ const v=parseFloat(e.months?.[selMonth])||0; if(v>0) catMap[e.category]=(catMap[e.category]||0)+v; });
+  const topCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  return <div className="p-6">
+    <div className="flex items-center justify-between mb-6">
+      <div><h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+        <p className="text-gray-500 text-sm mt-1">{data.map?.name} • {data.map?.year}</p></div>
+      <select className="form-select text-sm" style={{width:'auto'}} value={selMonth} onChange={e=>setSelMonth(+e.target.value)}>
+        {MF.map((m,i)=><option key={i} value={i}>{m}</option>)}
+      </select>
+    </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {[{l:'Total Receitas',v:tR[selMonth],c:'#22c55e',icon:'📈'},{l:'Total Despesas',v:tD[selMonth],c:'#ef4444',icon:'📉'},
+        {l:'Resultado Mensal',v:res[selMonth],c:res[selMonth]>=0?'#3b82f6':'#ef4444',icon:res[selMonth]>=0?'✅':'⚠️'},
+        {l:'Saldo Acumulado',v:saldo[selMonth],c:'#8b5cf6',icon:'💰'}
+      ].map((k,i)=><div key={i} className="kpi-card" style={{borderLeft:`4px solid ${k.c}`}}>
+        <div className="flex items-start justify-between">
+          <div><div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{k.l}</div>
+            <div className="text-2xl font-bold mt-1" style={{color:k.c}}>{fmt(k.v)}</div>
+            <div className="text-xs text-gray-400 mt-1">{MF[selMonth]} 2026</div></div>
+          <div className="text-2xl">{k.icon}</div>
+        </div>
+      </div>)}
+    </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      {[{l:'Receitas Anual',v:tR.reduce((a,b)=>a+b,0),c:'#22c55e'},{l:'Despesas Anual',v:tD.reduce((a,b)=>a+b,0),c:'#ef4444'},
+        {l:'Resultado Anual',v:res.reduce((a,b)=>a+b,0),c:'#3b82f6'},{l:'Saldo Final (Dez)',v:saldo[11],c:'#8b5cf6'}
+      ].map((k,i)=><div key={i} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <div className="text-xs text-gray-500 font-medium">{k.l}</div>
+        <div className="text-lg font-bold mt-1" style={{color:k.c}}>{fmt(k.v)}</div>
+      </div>)}
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <h3 className="font-bold text-gray-700 mb-4">Receitas vs Despesas por Mês</h3>
+        <BarChart height={240} labels={MS} datasets={[
+          {label:'Receitas',data:tR,backgroundColor:'rgba(34,197,94,.7)',borderColor:'#22c55e',borderWidth:1},
+          {label:'Despesas',data:tD,backgroundColor:'rgba(239,68,68,.7)',borderColor:'#ef4444',borderWidth:1},
+        ]}/>
+      </div>
+      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <h3 className="font-bold text-gray-700 mb-4">Evolução do Saldo Acumulado</h3>
+        <LineChart height={240} labels={MS} datasets={[
+          {label:'Saldo',data:saldo,borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.1)',fill:true,tension:.3,pointRadius:4},
+          {label:'Resultado',data:res,borderColor:'#3b82f6',backgroundColor:'transparent',tension:.3,pointRadius:3,borderDash:[4,2]},
+        ]}/>
+      </div>
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <h3 className="font-bold text-gray-700 mb-4">Despesas por Categoria — {MF[selMonth]}</h3>
+        <DoughnutChart height={240} labels={topCats.map(c=>c[0])} data={topCats.map(c=>c[1])}/>
+      </div>
+      <div className="lg:col-span-2 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <h3 className="font-bold text-gray-700 mb-3">Top 10 Despesas — {MF[selMonth]}</h3>
+        {data.expenses.filter(e=>(parseFloat(e.months?.[selMonth])||0)>0)
+          .sort((a,b)=>(parseFloat(b.months?.[selMonth])||0)-(parseFloat(a.months?.[selMonth])||0))
+          .slice(0,10)
+          .map((e,i)=><div key={i} className="flex items-center justify-between py-2 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 w-4">{i+1}</span>
+              <div>
+                <div className="text-sm text-gray-700">{e.description}</div>
+                <div className="text-xs text-gray-400">{e.category}</div>
+              </div>
+            </div>
+            <span className="text-sm font-semibold text-red-600">{fmtFull(parseFloat(e.months?.[selMonth])||0)}</span>
+          </div>)
+        }
+      </div>
+    </div>
+  </div>;
+};
+
+// ── ANNUAL MAP ───────────────────────────────────────────
+const AnualMapPage = ({ maps, mapId, setMapId, onToast }) => {
+  const [items, setItems] = useState([]);
+  const [map, setMap] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editingCell, setEditingCell] = useState(null);
+  const [editVal, setEditVal] = useState('');
+  const [showClone, setShowClone] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [cloneOpts, setCloneOpts] = useState({name:'',year:2027,scenario:'previsto',adjReceitas:0,adjDespesas:0});
+  const [newItem, setNewItem] = useState({type:'despesa',description:'',category:'',dueDay:'',months:Array(12).fill('')});
+
+  const load = useCallback(async () => {
+    if(!mapId) return;
+    setLoading(true);
+    try {
+      const [summary, mapData] = await Promise.all([
+        apiFetch(`/maps/${mapId}/summary`),
+        apiFetch(`/maps/${mapId}`)
+      ]);
+      setItems([...summary.receipts, ...summary.expenses]);
+      setMap(mapData);
+    } catch(e) { onToast('Erro ao carregar mapa: '+e.message); }
+    setLoading(false);
+  },[mapId]);
+
+  useEffect(()=>{ load(); },[load]);
+
+  const receipts = items.filter(i=>i.type==='receita');
+  const expenses = items.filter(i=>i.type==='despesa');
+  const {tR,tD,res,saldo} = calcTotals(receipts, expenses, map?.initial_balance);
+
+  const startEdit = (id, m, val) => { setEditingCell(`${id}-${m}`); setEditVal(val===0?'':String(val)); };
+  const commitEdit = async (id, m) => {
+    const val = parseFloat(editVal.replace(',','.')) || 0;
+    setItems(prev=>prev.map(i=>i.id===id?{...i,months:i.months.map((v,j)=>j===m?val:v)}:i));
+    setEditingCell(null);
+    try { await apiFetch(`/items/${id}/month`,{method:'PATCH',body:{monthIndex:m,value:val}}); onToast('✅ Valor salvo'); }
+    catch(e) { onToast('❌ Erro ao salvar: '+e.message); load(); }
+  };
+  const renderCell = (item, m) => {
+    const key=`${item.id}-${m}`;
+    const val = parseFloat(item.months?.[m]) || 0;
+    if(editingCell===key) return <input className="cell-input" autoFocus value={editVal}
+      onChange={e=>setEditVal(e.target.value)}
+      onBlur={()=>commitEdit(item.id,m)}
+      onKeyDown={e=>{ if(e.key==='Enter') commitEdit(item.id,m); if(e.key==='Escape') setEditingCell(null); }}/>;
+    return <span className={`cell-edit ${val===0?'text-gray-300':''}`} onClick={()=>startEdit(item.id,m,val)}>
+      {val===0?'—':fmt(val)}
+    </span>;
+  };
+
+  const handleClone = async () => {
+    try {
+      await apiFetch(`/maps/${mapId}/clone`,{method:'POST',body:cloneOpts});
+      onToast('✅ Mapa clonado com sucesso!'); setShowClone(false);
+    } catch(e) { onToast('❌ '+e.message); }
+  };
+  const handleAddItem = async () => {
+    try {
+      const months = newItem.months.map(v=>parseFloat(v)||0);
+      const item = await apiFetch(`/maps/${mapId}/items`,{method:'POST',body:{...newItem,months,dueDay:parseInt(newItem.dueDay)||null}});
+      setItems(prev=>[...prev,item]); onToast('✅ Item adicionado!'); setShowAdd(false);
+      setNewItem({type:'despesa',description:'',category:'',dueDay:'',months:Array(12).fill('')});
+    } catch(e) { onToast('❌ '+e.message); }
+  };
+  const handleDelete = async (id) => {
+    if(!confirm('Excluir este item?')) return;
+    try { await apiFetch(`/items/${id}`,{method:'DELETE'}); setItems(prev=>prev.filter(i=>i.id!==id)); onToast('🗑️ Item excluído'); }
+    catch(e) { onToast('❌ '+e.message); }
+  };
+
+  if(loading) return <Spinner/>;
+
+  return <div className="p-6">
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h1 className="text-2xl font-bold text-gray-800">Mapa Anual</h1>
+        <div className="flex items-center gap-2 mt-1">
+          <ScenarioBadge s={map?.scenario}/>
+          <span className="text-gray-500 text-sm">{map?.name} • {map?.year}</span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <select className="form-select text-sm" style={{width:'auto'}} value={mapId} onChange={e=>setMapId(+e.target.value||e.target.value)}>
+          {maps.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+        <button className="btn btn-outline btn-sm" onClick={()=>setShowAdd(true)}>➕ Novo Item</button>
+        <button className="btn btn-outline btn-sm" onClick={()=>setShowClone(true)}>📋 Clonar</button>
+        <button className="btn btn-outline btn-sm" onClick={load}>🔄</button>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+      {[{l:'Total Receitas',v:tR.reduce((a,b)=>a+b,0),c:'#22c55e'},{l:'Total Despesas',v:tD.reduce((a,b)=>a+b,0),c:'#ef4444'},
+        {l:'Resultado Anual',v:res.reduce((a,b)=>a+b,0),c:'#3b82f6'},{l:'Saldo Final (Dez)',v:saldo[11],c:'#8b5cf6'},
+        {l:'Nº de Itens',v:items.length,c:'#64748b'}
+      ].map((k,i)=><div key={i} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+        <div className="text-xs text-gray-500">{k.l}</div>
+        <div className="font-bold text-base mt-1" style={{color:k.c}}>{typeof k.v==='number'&&k.l!=='Nº de Itens'?fmt(k.v):k.v}</div>
+      </div>)}
+    </div>
+
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="map-table">
+          <thead><tr>
+            <th className="text-left">Descrição / Categoria</th>
+            {MS.map(m=><th key={m} className="text-right">{m}</th>)}
+            <th className="text-right">TOTAL</th>
+            <th className="text-right">Ações</th>
+          </tr></thead>
+          <tbody>
+            <tr className="section-header"><td colSpan={15}>📈 RECEITAS</td></tr>
+            {receipts.map(row=><tr key={row.id} className="receita-row">
+              <td title={row.description}>
+                <div className="text-xs text-gray-400">{row.category}{row.due_day?` • Vcto dia ${row.due_day}`:''}</div>
+                <div className="truncate font-medium">{row.description}</div>
+              </td>
+              {(row.months||Array(12).fill(0)).map((v,m)=><td key={m} className="text-right">{renderCell(row,m)}</td>)}
+              <td className="text-right font-semibold">{fmt((row.months||[]).reduce((a,b)=>a+(parseFloat(b)||0),0))}</td>
+              <td className="text-right"><button className="btn-danger btn btn-sm py-0.5 px-1.5" onClick={()=>handleDelete(row.id)}>🗑️</button></td>
+            </tr>)}
+            <tr className="total-row">
+              <td>📊 TOTAL RECEITAS</td>
+              {tR.map((v,m)=><td key={m} className="text-right text-green-700">{fmt(v)}</td>)}
+              <td className="text-right text-green-700">{fmt(tR.reduce((a,b)=>a+b,0))}</td><td/>
+            </tr>
+            <tr className="section-header"><td colSpan={15}>📉 DESPESAS</td></tr>
+            {expenses.map(row=><tr key={row.id} className="despesa-row">
+              <td title={row.description}>
+                <div className="text-xs text-gray-400">{row.category}{row.due_day?` • Vcto dia ${row.due_day}`:''}</div>
+                <div className="truncate font-medium">{row.description}</div>
+              </td>
+              {(row.months||Array(12).fill(0)).map((v,m)=><td key={m} className="text-right">{renderCell(row,m)}</td>)}
+              <td className="text-right font-semibold">{fmt((row.months||[]).reduce((a,b)=>a+(parseFloat(b)||0),0))}</td>
+              <td className="text-right"><button className="btn-danger btn btn-sm py-0.5 px-1.5" onClick={()=>handleDelete(row.id)}>🗑️</button></td>
+            </tr>)}
+            <tr className="total-row">
+              <td>📊 TOTAL DESPESAS</td>
+              {tD.map((v,m)=><td key={m} className="text-right text-red-700">{fmt(v)}</td>)}
+              <td className="text-right text-red-700">{fmt(tD.reduce((a,b)=>a+b,0))}</td><td/>
+            </tr>
+            <tr style={{height:'8px'}}><td colSpan={15}/></tr>
+            <tr className="total-row">
+              <td>⚡ RESULTADO</td>
+              {res.map((v,m)=><td key={m} className={`text-right font-bold ${v>=0?'text-blue-700':'text-red-700'}`}>{fmt(v)}</td>)}
+              <td className={`text-right font-bold ${res.reduce((a,b)=>a+b,0)>=0?'text-blue-700':'text-red-700'}`}>{fmt(res.reduce((a,b)=>a+b,0))}</td><td/>
+            </tr>
+            <tr className="saldo-row">
+              <td>💰 SALDO ACUMULADO</td>
+              {saldo.map((v,m)=><td key={m} className={`text-right ${v>=0?'text-blue-700':'text-red-700'}`}>{fmt(v)}</td>)}
+              <td className="text-right text-blue-700">{fmt(saldo[11])}</td><td/>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="p-3 border-t border-gray-100 text-xs text-gray-400">Clique em qualquer valor para editar • Enter para salvar • Esc para cancelar • Salvo automaticamente no banco de dados</div>
+    </div>
+
+    <Modal open={showClone} onClose={()=>setShowClone(false)} title="Clonar Mapa Financeiro">
+      <div className="space-y-4">
+        <div><label className="form-label">Nome do Novo Mapa *</label>
+          <input className="form-input" value={cloneOpts.name} onChange={e=>setCloneOpts(p=>({...p,name:e.target.value}))} placeholder="Ex: Simulação 2027"/></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="form-label">Ano</label><input type="number" className="form-input" value={cloneOpts.year} onChange={e=>setCloneOpts(p=>({...p,year:+e.target.value}))}/></div>
+          <div><label className="form-label">Cenário</label>
+            <select className="form-select" value={cloneOpts.scenario} onChange={e=>setCloneOpts(p=>({...p,scenario:e.target.value}))}>
+              {['real','previsto','simulacao','otimista','conservador','critico'].map(s=><option key={s}>{s}</option>)}
+            </select></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="form-label">Reajuste Receitas (%)</label><input type="number" className="form-input" value={cloneOpts.adjReceitas} onChange={e=>setCloneOpts(p=>({...p,adjReceitas:+e.target.value}))}/></div>
+          <div><label className="form-label">Reajuste Despesas (%)</label><input type="number" className="form-input" value={cloneOpts.adjDespesas} onChange={e=>setCloneOpts(p=>({...p,adjDespesas:+e.target.value}))}/></div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button className="btn btn-primary flex-1" onClick={handleClone}>📋 Criar Cópia</button>
+          <button className="btn btn-outline" onClick={()=>setShowClone(false)}>Cancelar</button>
+        </div>
+      </div>
+    </Modal>
+
+    <Modal open={showAdd} onClose={()=>setShowAdd(false)} title="Novo Item Financeiro" size="lg">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="form-label">Tipo *</label>
+            <select className="form-select" value={newItem.type} onChange={e=>setNewItem(p=>({...p,type:e.target.value}))}>
+              <option value="receita">Receita</option><option value="despesa">Despesa</option>
+            </select></div>
+          <div><label className="form-label">Dia Vencimento</label>
+            <input type="number" className="form-input" value={newItem.dueDay} onChange={e=>setNewItem(p=>({...p,dueDay:e.target.value}))} placeholder="1-31"/></div>
+        </div>
+        <div><label className="form-label">Descrição *</label>
+          <input className="form-input" value={newItem.description} onChange={e=>setNewItem(p=>({...p,description:e.target.value}))}/></div>
+        <div><label className="form-label">Categoria</label>
+          <input className="form-input" value={newItem.category} onChange={e=>setNewItem(p=>({...p,category:e.target.value}))}/></div>
+        <div><label className="form-label">Valores Mensais (R$)</label>
+          <div className="grid grid-cols-6 gap-2 mt-1">
+            {MS.map((m,i)=><div key={i}><div className="text-xs text-gray-500 text-center mb-1">{m}</div>
+              <input type="number" className="form-input text-center text-sm p-1.5" placeholder="0"
+                value={newItem.months[i]||''}
+                onChange={e=>setNewItem(p=>({...p,months:p.months.map((v,j)=>j===i?e.target.value:v)}))}/>
+            </div>)}
+          </div></div>
+        <div className="flex gap-3 pt-2">
+          <button className="btn btn-primary flex-1" onClick={handleAddItem}>➕ Adicionar</button>
+          <button className="btn btn-outline" onClick={()=>setShowAdd(false)}>Cancelar</button>
+        </div>
+      </div>
+    </Modal>
+  </div>;
+};
+
+// ── SIMPLE PAGES (Placeholder) ───────────────────────────
+const PlaceholderPage = ({ title, icon, desc }) => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold text-gray-800 mb-2">{title}</h1>
+    <div className="bg-white rounded-xl p-12 border border-gray-100 shadow-sm text-center mt-4">
+      <div className="text-5xl mb-4">{icon}</div>
+      <h3 className="font-bold text-gray-700 text-lg mb-2">{title}</h3>
+      <p className="text-gray-500 text-sm">{desc||'Módulo disponível na próxima versão.'}</p>
+    </div>
+  </div>
+);
+
+// ── USERS PAGE ───────────────────────────────────────────
+const UsersPage = ({ onToast }) => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{ apiFetch('/users').then(setUsers).catch(()=>{}).finally(()=>setLoading(false)); },[]);
+  const roleLabels = {admin:'Administrador',gestor:'Gestor',operacional:'Operacional'};
+  const roleColors = {admin:'blue',gestor:'yellow',operacional:'gray'};
+  if(loading) return <Spinner/>;
+  return <div className="p-6">
+    <div className="flex items-center justify-between mb-5">
+      <div><h1 className="text-2xl font-bold text-gray-800">Usuários</h1><p className="text-gray-500 text-sm">{users.length} usuários</p></div>
+      <button className="btn btn-primary">➕ Novo Usuário</button>
+    </div>
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <table className="w-full">
+        <thead><tr className="bg-gray-50 border-b border-gray-200">
+          {['Nome','E-mail','Perfil','Status','Criado em'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
+        </tr></thead>
+        <tbody>
+          {users.map(u=><tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50">
+            <td className="px-4 py-3"><div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">{u.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+              <span className="text-sm font-medium">{u.name}</span>
+            </div></td>
+            <td className="px-4 py-3 text-sm text-gray-600">{u.email}</td>
+            <td className="px-4 py-3"><Badge variant={roleColors[u.role]}>{roleLabels[u.role]}</Badge></td>
+            <td className="px-4 py-3"><Badge variant={u.status==='ativo'?'green':'red'}>{u.status}</Badge></td>
+            <td className="px-4 py-3 text-sm text-gray-500">{u.created_at?.slice(0,10)}</td>
+          </tr>)}
+        </tbody>
+      </table>
+    </div>
+  </div>;
+};
+
+// ── TOPBAR ───────────────────────────────────────────────
+const TopBar = ({ page, user, onLogout }) => {
+  const labels = {dashboard:'Dashboard',map:'Mapa Anual',entries:'Lançamentos',agenda:'Agenda',simulations:'Simulações',reports:'Relatórios',accounts:'Contas',cards:'Cartões',coa:'Plano de Contas',users:'Usuários',audit:'Auditoria',settings:'Configurações'};
+  return <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+    <div className="flex items-center gap-2 text-sm text-gray-500">
+      <span>CFH</span><span>›</span><span className="text-gray-800 font-semibold">{labels[page]||page}</span>
+    </div>
+    <button className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1.5 transition-colors" onClick={onLogout}>
+      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">{user.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+      <span className="text-sm text-gray-700">{user.name.split(' ')[0]}</span>
+      <span className="text-xs text-gray-400">Sair</span>
+    </button>
+  </div>;
+};
+
+// ── MAIN APP ─────────────────────────────────────────────
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [page, setPage] = useState('dashboard');
+  const [maps, setMaps] = useState([]);
+  const [mapId, setMapId] = useState(null);
+  const [toast, setToast] = useState('');
+  const [appLoading, setAppLoading] = useState(true);
+
+  const showToast = useCallback((msg) => { setToast(msg); }, []);
+
+  // Verify token on load
+  useEffect(() => {
+    if(!_token) { setAppLoading(false); return; }
+    apiFetch('/auth/me').then(u => {
+      if(u) { setUser(u); loadMaps(); }
+      else setAppLoading(false);
+    }).catch(() => setAppLoading(false));
+  }, []);
+
+  const loadMaps = async () => {
+    try {
+      const data = await apiFetch('/maps');
+      setMaps(data);
+      if(data.length > 0 && !mapId) setMapId(data[0].id);
+    } catch(e) { console.error(e); }
+    setAppLoading(false);
+  };
+
+  const handleLogin = (u) => { setUser(u); loadMaps(); };
+  const handleLogout = () => { setToken(null); setUser(null); setMaps([]); setMapId(null); };
+
+  if(appLoading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+    <div className="text-center">
+      <div className="spinner mx-auto mb-4" style={{borderTopColor:'#3b82f6'}}/>
+      <div className="text-white text-sm">Carregando...</div>
+    </div>
+  </div>;
+
+  if(!user) return <LoginPage onLogin={handleLogin}/>;
+
+  const renderPage = () => {
+    switch(page) {
+      case 'dashboard':    return <DashboardPage mapId={mapId}/>;
+      case 'map':          return <AnualMapPage maps={maps} mapId={mapId} setMapId={setMapId} onToast={showToast}/>;
+      case 'users':        return <UsersPage onToast={showToast}/>;
+      case 'simulations':  return <PlaceholderPage title="Simulações" icon="🔮" desc="Crie cenários financeiros alternativos e compare impactos."/>;
+      case 'reports':      return <PlaceholderPage title="Relatórios" icon="📈" desc="Relatórios completos em PDF, Excel e CSV."/>;
+      case 'entries':      return <PlaceholderPage title="Lançamentos" icon="📋" desc="Lista completa de lançamentos com filtros avançados."/>;
+      case 'agenda':       return <PlaceholderPage title="Agenda Financeira" icon="📅" desc="Visualize vencimentos em lista e calendário."/>;
+      case 'accounts':     return <PlaceholderPage title="Contas Financeiras" icon="🏦" desc="Gerencie suas contas bancárias e investimentos."/>;
+      case 'cards':        return <PlaceholderPage title="Cartões de Crédito" icon="💳" desc="Controle de faturas e limites por cartão."/>;
+      case 'coa':          return <PlaceholderPage title="Plano de Contas" icon="📂" desc="Estrutura hierárquica de receitas e despesas."/>;
+      case 'audit':        return <PlaceholderPage title="Logs de Auditoria" icon="🔍" desc="Trilha completa de todas as alterações do sistema."/>;
+      case 'settings':     return <PlaceholderPage title="Configurações" icon="⚙️" desc="Personalize o sistema conforme suas necessidades."/>;
+      default: return <DashboardPage mapId={mapId}/>;
+    }
+  };
+
+  return <div>
+    <Sidebar page={page} setPage={setPage} user={user}/>
+    <div className="main-content">
+      <TopBar page={page} user={user} onLogout={handleLogout}/>
+      <div className="min-h-screen bg-gray-50">{renderPage()}</div>
+    </div>
+    {toast && <Toast msg={toast} onDone={()=>setToast('')}/>}
+  </div>;
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
