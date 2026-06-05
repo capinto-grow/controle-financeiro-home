@@ -15,7 +15,7 @@ const pool = new Pool({
 // Cria cada tabela separadamente para tolerar falhas parciais
 const TABLES = [
   `CREATE TABLE IF NOT EXISTS workspaces (
-    id VARCHAR(36) PRIMARY KEY DEFAULT REPLACE(gen_random_uuid()::text,'-',''),
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL, owner_user_id VARCHAR(36),
     plan VARCHAR(50) NOT NULL DEFAULT 'personal',
     status VARCHAR(20) NOT NULL DEFAULT 'ativo',
@@ -24,7 +24,7 @@ const TABLES = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(36) PRIMARY KEY DEFAULT REPLACE(gen_random_uuid()::text,'-',''),
+    id VARCHAR(36) PRIMARY KEY,
     workspace_id VARCHAR(36) NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL,
     password_hash TEXT NOT NULL,
@@ -35,7 +35,7 @@ const TABLES = [
     UNIQUE(workspace_id, email)
   )`,
   `CREATE TABLE IF NOT EXISTS financial_maps (
-    id VARCHAR(36) PRIMARY KEY DEFAULT REPLACE(gen_random_uuid()::text,'-',''),
+    id VARCHAR(36) PRIMARY KEY,
     workspace_id VARCHAR(36) NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     user_id VARCHAR(36) NOT NULL REFERENCES users(id),
     name VARCHAR(255) NOT NULL, year SMALLINT NOT NULL,
@@ -46,7 +46,7 @@ const TABLES = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `CREATE TABLE IF NOT EXISTS map_items (
-    id VARCHAR(36) PRIMARY KEY DEFAULT REPLACE(gen_random_uuid()::text,'-',''),
+    id VARCHAR(36) PRIMARY KEY,
     map_id VARCHAR(36) NOT NULL REFERENCES financial_maps(id) ON DELETE CASCADE,
     type VARCHAR(10) NOT NULL CHECK (type IN ('receita','despesa')),
     description VARCHAR(500) NOT NULL, category VARCHAR(255),
@@ -56,7 +56,7 @@ const TABLES = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `CREATE TABLE IF NOT EXISTS financial_accounts (
-    id VARCHAR(36) PRIMARY KEY DEFAULT REPLACE(gen_random_uuid()::text,'-',''),
+    id VARCHAR(36) PRIMARY KEY,
     workspace_id VARCHAR(36) NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL, type VARCHAR(30) NOT NULL DEFAULT 'conta_corrente',
     institution VARCHAR(255), opening_balance NUMERIC(15,2) NOT NULL DEFAULT 0,
