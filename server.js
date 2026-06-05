@@ -20,27 +20,39 @@ app.use('/api/users',    require('./src/routes/users'));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
-// Debug endpoint - verifica banco sem autenticação
+// Debug endpoint — SEMPRE retorna 200 para diagnóstico via web_fetch
 app.get('/debug/db', async (req, res) => {
+  const result = {
+    ts: new Date().toISOString(),
+    jwt_set: !!process.env.JWT_SECRET,
+    db_url_set: !!process.env.DATABASE_URL,
+    node_env: process.env.NODE_ENV || 'undefined',
+  };
   try {
     const db = require('./src/db');
-    const users = await db.query('SELECT COUNT(*) as count, MAX(email) as last_email FROM users');
-    const maps = await db.query('SELECT COUNT(*) as count FROM financial_maps');
-    const items = await db.query('SELECT COUNT(*) as count FROM map_items');
-    res.json({
-      ok: true,
-      startup_ran: true,
-      users: { count: parseInt(users.rows[0].count), sample_email: users.rows[0].last_email },
-      maps: parseInt(maps.rows[0].count),
-      items: parseInt(items.rows[0].count),
-      jwt_secret_set: !!process.env.JWT_SECRET,
-      db_url_set: !!process.env.DATABASE_URL,
-      node_env: process.env.NODE_ENV,
-      ts: new Date().toISOString()
-    });
+    // Testa conexão básica
+    const ping = await db.query('SELECT 1 as n');
+    result.db_connected = true;
+    // Verifica tabelas
+    try {
+      const u = await db.query("SELECT COUNT(*) as c FROM users");
+      result.users_count = parseInt(u.rows[0].c);
+    } catch(e) { result.users_error = e.message; }
+    try {
+      const m = await db.query("SELECT COUNT(*) as c FROM financial_maps");
+      result.maps_count = parseInt(m.rows[0].c);
+    } catch(e) { result.maps_error = e.message; }
+    try {
+      const i = await db.query("SELECT COUNT(*) as c FROM map_items");
+      result.items_count = parseInt(i.rows[0].c);
+    } catch(e) { result.items_error = e.message; }
+    result.ok = !result.users_error;
   } catch(e) {
-    res.status(500).json({ ok: false, error: e.message, tables_exist: false });
+    result.db_connected = false;
+    result.db_error = e.message;
+    result.ok = false;
   }
+  res.json(result); // SEMPRE 200
 });
 
 // Serve static files
@@ -48,9 +60,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => {
-  console.log(`🚀 CFH Server na porta ${PORT} | ENV: ${process.env.NODE_ENV || 'dev'}`);
-  console.log(`   JWT_SECRET: ${process.env.JWT_SECRET ? '✅ definido' : '⚠️ usando fallback'}`);
-  console.log(`   DATABASE_URL: ${process.env.DATABASE_URL ? '✅ definido' : '❌ não definido'}`);
+  console.log(`🚀 CFH na porta ${PORT}`);
+  console.log(`   JWT: ${process.env.JWT_SECRET ? '✅' : '⚠️ fallback'}`);
+  console.log(`   DB:  ${process.env.DATABASE_URL ? '✅' : '❌ não definida'}`);
 });
 
 module.exports = app;
