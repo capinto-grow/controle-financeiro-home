@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 
 // Garante JWT_SECRET mesmo sem variável de ambiente
 if (!process.env.JWT_SECRET) {
@@ -180,13 +181,13 @@ async function initDB() {
     await pool.query('DELETE FROM map_items WHERE map_id=$1', [MAP_ID]);
     for (const [d,c,dd,m,o] of RECEIPTS) {
       const mR = `{${m.join(',')}}`;
-      await pool.query('INSERT INTO map_items (map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6::NUMERIC[],$7)',
-        [MAP_ID,'receita',d,c,dd,mR,o]);
+      await pool.query('INSERT INTO map_items (id,map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6,$7::NUMERIC[],$8)',
+        [uuidv4(),MAP_ID,'receita',d,c,dd,mR,o]);
     }
     for (const [d,c,dd,m,o] of EXPENSES) {
       const mE = `{${m.join(',')}}`;
-      await pool.query('INSERT INTO map_items (map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6::NUMERIC[],$7)',
-        [MAP_ID,'despesa',d,c,dd,mE,o]);
+      await pool.query('INSERT INTO map_items (id,map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6,$7::NUMERIC[],$8)',
+        [uuidv4(),MAP_ID,'despesa',d,c,dd,mE,o]);
     }
     console.log(`✅ [CFH] Seed OK: ${RECEIPTS.length} receitas + ${EXPENSES.length} despesas`);
     console.log('   👤 carlos@grow.com.br / admin123');
