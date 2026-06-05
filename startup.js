@@ -129,18 +129,28 @@ async function initDB() {
   }
   console.log('✅ [CFH] Tabelas verificadas');
 
-  // Verifica se já tem dados
+  // Verifica usuários
+  let hasUsers = false;
   try {
     const { rows } = await pool.query("SELECT COUNT(*) FROM users");
-    if (parseInt(rows[0].count) > 0) {
-      console.log(`✅ [CFH] Banco já populado (${rows[0].count} usuários)`);
-      return;
-    }
+    hasUsers = parseInt(rows[0].count) > 0;
+    if (hasUsers) console.log(`✅ [CFH] Usuários já existem: ${rows[0].count}`);
   } catch(e) {
     console.error('❌ [CFH] Erro ao verificar users:', e.message);
     return;
   }
 
+  // Verifica items — pode ter users mas sem items (seed parcial anterior)
+  let hasItems = false;
+  try {
+    const { rows } = await pool.query("SELECT COUNT(*) FROM map_items");
+    hasItems = parseInt(rows[0].count) > 0;
+    if (hasItems) { console.log(`✅ [CFH] Items já existem: ${rows[0].count}`); return; }
+  } catch(e) {
+    console.error('❌ [CFH] Erro ao verificar items:', e.message);
+  }
+
+  if (hasUsers && hasItems) return;
   console.log('🌱 [CFH] Inserindo dados de 2026...');
   try {
     const h1 = await bcrypt.hash('admin123', 10);
@@ -169,12 +179,14 @@ async function initDB() {
     );
     await pool.query('DELETE FROM map_items WHERE map_id=$1', [MAP_ID]);
     for (const [d,c,dd,m,o] of RECEIPTS) {
-      await pool.query('INSERT INTO map_items (map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-        [MAP_ID,'receita',d,c,dd,m,o]);
+      const mR = `{${m.join(',')}}`;
+      await pool.query('INSERT INTO map_items (map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6::NUMERIC[],$7)',
+        [MAP_ID,'receita',d,c,dd,mR,o]);
     }
     for (const [d,c,dd,m,o] of EXPENSES) {
-      await pool.query('INSERT INTO map_items (map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-        [MAP_ID,'despesa',d,c,dd,m,o]);
+      const mE = `{${m.join(',')}}`;
+      await pool.query('INSERT INTO map_items (map_id,type,description,category,due_day,months,display_order) VALUES ($1,$2,$3,$4,$5,$6::NUMERIC[],$7)',
+        [MAP_ID,'despesa',d,c,dd,mE,o]);
     }
     console.log(`✅ [CFH] Seed OK: ${RECEIPTS.length} receitas + ${EXPENSES.length} despesas`);
     console.log('   👤 carlos@grow.com.br / admin123');
